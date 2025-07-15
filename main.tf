@@ -1,11 +1,10 @@
 # ===========================================================
 # 🔍 Fetch public IP of current machine (used for SSH access)
 # ===========================================================
+
 data "http" "my_ip" {
   url = "https://api.ipify.org"
 }
-
-
 
 # ===================================
 # 🔐 TLS Key Pair Creation (Optional)
@@ -29,10 +28,6 @@ resource "local_file" "this" {
   content         = tls_private_key.this[0].private_key_openssh
   file_permission = "0600"
 }
-
-
-
-
 
 # =================================
 # 🔒 Security Group + Ingress Rules
@@ -117,14 +112,9 @@ resource "aws_security_group_rule" "egress" {
   security_group_id = aws_security_group.this.id
 }
 
-
-
-
-
 # =================================
 # 🛡️ IAM Role + Profile for ECS EC2
 # =================================
-
 
 data "aws_iam_policy_document" "ecs_assume_role" {
   statement {
@@ -160,9 +150,6 @@ resource "aws_iam_instance_profile" "this" {
   tags  = merge(local.common_tags, { Name = local.name })
 }
 
-
-
-
 # ==============================================
 # 🧾 ECS Cluster Registration Script (User Data)
 # ==============================================
@@ -174,10 +161,6 @@ data "template_file" "ecs_user_data" {
     ecs_cluster_name = var.ecs_cluster_name
   }
 }
-
-
-
-
 
 # ==========================================
 # 📦 Amazon Linux 2023 AMIs (ECS vs General)
@@ -208,10 +191,6 @@ data "aws_ami" "al2023_kernel6plus" {
     values = ["available"]
   }
 }
-
-
-
-
 
 # ================================
 # 🚀 Launch Template (used by ASG)
@@ -257,10 +236,6 @@ resource "aws_launch_template" "this" {
   tags = merge(local.common_tags, { Name = local.name })
 }
 
-
-
-
-
 # ==================
 # 🧱 Placement Group
 # ==================
@@ -269,9 +244,6 @@ resource "aws_placement_group" "this" {
   name     = local.name
   strategy = var.placement_strategy
 }
-
-
-
 
 # ===========================
 # 📈 Auto Scaling Group (ASG)
@@ -304,10 +276,6 @@ resource "aws_autoscaling_group" "this" {
     version = aws_launch_template.this.latest_version
   }
 }
-
-
-
-
 
 # =============================================
 # 📊 Auto Scaling Policies + Alarms (CPU-based)
