@@ -18,6 +18,50 @@ variable "environment" {
 
 
 
+variable "vpc_id" {
+  description = "ID of the VPC where all resources will be deployed."
+  type        = string
+}
+
+variable "enable_public_https" {
+  description = "Enable ingress on port 443 for HTTPS traffic."
+  type        = bool
+  default     = false
+}
+
+variable "enable_public_http" {
+  description = "Enable ingress on port 80 for HTTP traffic."
+  type        = bool
+  default     = false
+}
+
+variable "enable_public_ssh" {
+  description = "Enable ingress on port 22 for SSH access to EC2 instances."
+  type        = bool
+  default     = false
+}
+
+variable "enable_ssh_from_current_ip" {
+  description = "Enable SSH access from the IP of the machine running Terraform"
+  type        = bool
+  default     = false
+}
+
+variable "load_balancer_config" {
+  type = list(object({
+    sg_id = string
+    port  = number
+    protocol = optional(string)
+  }))
+  default = []
+}
+
+
+
+
+
+
+
 
 variable "ami_id" {
   description = "AMI ID for instances"
@@ -28,7 +72,7 @@ variable "ami_id" {
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t3.micro"
+  default     = "t2.micro"
 }
 
 variable "ebs_type" {
@@ -70,7 +114,7 @@ variable "associate_public_ip_address" {
 variable "user_data" {
   description = "The Base64-encoded user data to provide when launching the instance"
   type        = string
-  default     = null
+  default     = ""
 }
 
 variable "security_groups" {
@@ -78,6 +122,7 @@ variable "security_groups" {
   type        = list(string)
   default     = []
 }
+
 
 
 
@@ -91,6 +136,7 @@ variable "ecs_cluster_name" {
 
 
 
+
 variable "desired_capacity" {
   type    = number
   default = 2
@@ -98,7 +144,7 @@ variable "desired_capacity" {
 
 variable "max_size" {
   type    = number
-  default = 4
+  default = 8
 }
 
 variable "min_size" {
@@ -144,8 +190,4 @@ variable "enable_auto_scaling_alarms" {
 variable "vpc_zone_identifier" {
   description = "A list of subnet IDs to launch resources in. Subnets automatically determine which availability zones the group will reside. Conflicts with `availability_zones`"
   type        = list(string)
-  default     = null
 }
-
-
-
