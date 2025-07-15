@@ -12,18 +12,21 @@ data "http" "my_ip" {
 
 resource "tls_private_key" "this" {
   count = var.create_new_key_pair == true ? 1 : 0
+
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
 resource "aws_key_pair" "this" {
   count = var.create_new_key_pair == true ? 1 : 0
+
   key_name   = "${local.name}-key"
   public_key = tls_private_key.this[0].public_key_openssh
 }
 
 resource "local_file" "this" {
   count = var.create_new_key_pair == true ? 1 : 0
+
   filename        = "${path.root}/keys/${aws_key_pair.this[0].key_name}.pem"
   content         = tls_private_key.this[0].private_key_openssh
   file_permission = "0600"
@@ -44,6 +47,7 @@ resource "aws_security_group" "this" {
 # Conditional Ingress: HTTP
 resource "aws_security_group_rule" "public_http" {
   count = var.enable_public_http == true ? 1 : 0
+
   type              = "ingress"
   from_port         = 80
   to_port           = 80
@@ -56,6 +60,7 @@ resource "aws_security_group_rule" "public_http" {
 # Conditional Ingress: HTTPS
 resource "aws_security_group_rule" "public_https" {
   count = var.enable_public_https == true ? 1 : 0
+
   type              = "ingress"
   from_port         = 443
   to_port           = 443
@@ -68,6 +73,7 @@ resource "aws_security_group_rule" "public_https" {
 # Conditional Ingress: SSH only from current IP
 resource "aws_security_group_rule" "current_ip_ssh" {
   count = var.enable_ssh_from_current_ip ? 1 : 0
+
   description       = "Allow SSH"
   type              = "ingress"
   from_port         = 22
@@ -80,6 +86,7 @@ resource "aws_security_group_rule" "current_ip_ssh" {
 # Conditional Ingress: SSH from anywhere (NOT recommended in prod unless necessary)
 resource "aws_security_group_rule" "public_ssh" {
   count = var.enable_public_ssh ? 1 : 0
+
   description       = "Allow SSH"
   type              = "ingress"
   from_port         = 22
@@ -92,6 +99,7 @@ resource "aws_security_group_rule" "public_ssh" {
 # Allow inbound from load balancer SGs (configurable list)
 resource "aws_security_group_rule" "loadbalancer_sg_access" {
   count = length(var.load_balancer_config)
+
   description              = "Allow HTTPS"
   type                     = "ingress"
   from_port                = var.load_balancer_config[count.index].port
@@ -133,21 +141,25 @@ data "aws_iam_policy" "ecs_ec2_role_policy" {
 
 resource "aws_iam_role" "this" {
   count = var.ecs_cluster_name != null ? 1 : 0
-  name  = "${local.name}-ecsInstanceRole"
+
+  name               = "${local.name}-ecsInstanceRole"
   assume_role_policy = data.aws_iam_policy_document.ecs_assume_role.json
+  tags               = merge(local.common_tags, { Name = "${local.name}-ecsInstanceRole" })
 }
 
 resource "aws_iam_role_policy_attachment" "this" {
   count = var.ecs_cluster_name != null ? 1 : 0
+
   role       = aws_iam_role.this[0].name
   policy_arn = data.aws_iam_policy.ecs_ec2_role_policy.arn
 }
 
 resource "aws_iam_instance_profile" "this" {
   count = var.ecs_cluster_name != null ? 1 : 0
-  name  = "${local.name}-ecsInstanceProfile"
-  role  = aws_iam_role.this[0].name
-  tags  = merge(local.common_tags, { Name = local.name })
+
+  name = "${local.name}-ecsInstanceProfile"
+  role = aws_iam_role.this[0].name
+  tags = merge(local.common_tags, { Name = "${local.name}-ecsInstanceProfile" })
 }
 
 # ==============================================
@@ -156,6 +168,7 @@ resource "aws_iam_instance_profile" "this" {
 
 data "template_file" "ecs_user_data" {
   count = var.ecs_cluster_name != null ? 1 : 0
+
   template = file("${path.module}/scripts/ecs_cluster_registration.sh.tpl")
   vars = {
     ecs_cluster_name = var.ecs_cluster_name
@@ -283,6 +296,7 @@ resource "aws_autoscaling_group" "this" {
 
 resource "aws_autoscaling_policy" "scale_out_cpu" {
   count = var.enable_auto_scaling_alarms ? 1 : 0
+
   name                   = "scale-out-cpu"
   scaling_adjustment     = 1
   adjustment_type        = "ChangeInCapacity"
@@ -293,6 +307,7 @@ resource "aws_autoscaling_policy" "scale_out_cpu" {
 
 resource "aws_autoscaling_policy" "scale_in_cpu" {
   count = var.enable_auto_scaling_alarms ? 1 : 0
+
   name                   = "scale-in-cpu"
   scaling_adjustment     = -1
   adjustment_type        = "ChangeInCapacity"
@@ -303,6 +318,7 @@ resource "aws_autoscaling_policy" "scale_in_cpu" {
 
 resource "aws_cloudwatch_metric_alarm" "scale_out_cpu" {
   count = var.enable_auto_scaling_alarms ? 1 : 0
+
   alarm_name          = "${local.name}-scale-out"
   alarm_description   = "Scale out when CPU > 80%"
   comparison_operator = "GreaterThanOrEqualToThreshold"
@@ -317,11 +333,12 @@ resource "aws_cloudwatch_metric_alarm" "scale_out_cpu" {
   }
   actions_enabled = true
   alarm_actions   = [aws_autoscaling_policy.scale_out_cpu[0].arn]
-  tags = merge(local.common_tags, { Name = "${local.name}-scale-out" })
+  tags            = merge(local.common_tags, { Name = "${local.name}-scale-out" })
 }
 
 resource "aws_cloudwatch_metric_alarm" "scale_in_cpu" {
   count = var.enable_auto_scaling_alarms ? 1 : 0
+
   alarm_name          = "${local.name}-scale-in"
   alarm_description   = "Scale in when CPU < 60%"
   comparison_operator = "LessThanOrEqualToThreshold"
@@ -336,5 +353,5 @@ resource "aws_cloudwatch_metric_alarm" "scale_in_cpu" {
   }
   actions_enabled = true
   alarm_actions   = [aws_autoscaling_policy.scale_in_cpu[0].arn]
-  tags = merge(local.common_tags, { Name = "${local.name}-scale-in" })
+  tags            = merge(local.common_tags, { Name = "${local.name}-scale-in" })
 }
