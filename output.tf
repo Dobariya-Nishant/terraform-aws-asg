@@ -2,7 +2,7 @@ output "template_id" {
   value = aws_launch_template.this.id
 }
 
-output "template_id" {
+output "template_name" {
   value = aws_launch_template.this.name
 }
 
