@@ -165,7 +165,7 @@ variable "desired_capacity" {
 variable "max_size" {
   description = "Maximum number of instances the Auto Scaling Group can scale up to."
   type        = number
-  default     = 8
+  default     = 6
 }
 
 variable "min_size" {
