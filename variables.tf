@@ -26,11 +26,6 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "subnet_ids" {
-  description = "List of subnet IDs where EC2 instances will be launched."
-  type        = list(string)
-}
-
 variable "vpc_zone_identifier" {
   description = "List of subnet IDs for the Auto Scaling Group to launch instances in. Determines availability zones."
   type        = list(string)
